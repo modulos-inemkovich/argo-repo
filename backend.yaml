@@ -19,7 +19,7 @@ spec:
         - values.yaml
       parameters:
       - name: "image.name"
-        value: "modulosplatformcontainerregistry.azurecr.io/modulos-platform-backend:18.post8-gd46e821f"
+        value: "modulosplatformcontainerregistry.azurecr.io/modulos-platform-backend:test"
       values: |
         affinity:
           podAntiAffinity:
