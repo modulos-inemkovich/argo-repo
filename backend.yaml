@@ -1,0 +1,97 @@
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: dev-backend
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    path: "charts/modulos-platform/backend"
+    repoURL: "git@github.com:Modulos/argocd-apps.git"
+    targetRevision: main
+    helm:
+      releaseName: modulos-platform-backend
+      valueFiles:
+        - values.yaml
+      parameters:
+      - name: "image.name"
+        value: "modulosplatformcontainerregistry.azurecr.io/modulos-platform-backend:18.post8-gd46e821f"
+      values: |
+        affinity:
+          podAntiAffinity:
+            preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: backend
+                topologyKey: "kubernetes.io/hostname"
+        ingress:
+          host: "dev.modulos.ai"
+          annotations:
+            nginx.ingress.kubernetes.io/ssl-redirect: "true"
+            nginx.ingress.kubernetes.io/use-regex: "true"
+            nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+            nginx.ingress.kubernetes.io/proxy-buffering: "off"
+            nginx.ingress.kubernetes.io/proxy-connect-timeout: "172800"
+            nginx.ingress.kubernetes.io/proxy-send-timeout: "172800"
+            nginx.ingress.kubernetes.io/proxy-read-timeout: "172800"
+        serviceAccountName: "modulosdevserviceaccount"
+        resources:
+          requests:
+            cpu: "512m"
+            memory: "1Gi"
+          limits:
+            cpu: "1"
+            memory: "1500Mi"
+        nodeSelector: 
+          workload: "platform"
+        hpa:
+          enabled: true
+          minReplicas: 2
+          maxReplicas: 3
+          memory:
+            averageUtilization: 90
+          cpu:
+            averageUtilization: 95
+        config:
+          anyio_thread_limit: 100
+          redis:
+            redis_cache_enabled: "True"
+        probe:
+          startup:
+            timeoutSeconds: 1
+            periodSeconds: 10
+            failureThreshold: 30
+          readiness:
+            timeoutSeconds: 6
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          liveness:
+            timeoutSeconds: 5
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            failureThreshold: 5
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dev
+  syncPolicy:
+    syncOptions:
+      - Validate=true
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+    # automated:
+    #   prune: true
+    #   selfHeal: true
+    #   allowEmpty: false
+  ignoreDifferences:
+  - group: apps
+    kind: Deployment
+    jsonPointers:
+    - /spec/replicas
