@@ -19,7 +19,7 @@ spec:
         - values.yaml
       parameters:
       - name: "image.name"
-        value: "modulosplatformcontainerregistry.azurecr.io/modulos-platform-backend:test"
+        value: "modulosplatformcontainerregistry.azurecr.io/modulos-platform-backend:test-bypass-rule"
       values: |
         affinity:
           podAntiAffinity:
